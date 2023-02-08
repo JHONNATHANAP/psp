@@ -1,104 +1,111 @@
 import glob
 import hashlib
 import os
-from pathlib import Path
 import re
 from datetime import date, datetime, timedelta
-import jwt
+from pathlib import Path
+
 import bcrypt
-from flask import request,send_file
+import jwt
+import pandas as pd
+from flask import current_app, request, send_file
 from flask_jwt_extended import create_access_token, jwt_required
 from flask_restful import Resource
+
 from src.models.models import User, UserSchema, db
-import pandas as pd
+
 user_schema = UserSchema()
 
 
 class ViewTareas(Resource):
     def post(self):
         # diabetes_file = request['args']['files']
-        try:
-            diabetes_file = request.files.get("Diabetes")
-            praluent_file = request.files.get("Praluent")
-            base_file = request.files.get("Base")
-            producto_file = request.files.get("Producto")
-            cargos_file = request.files.get("Cargos")
+        try:      
 
-            path_storage ='/app/Temporal'
-            path_diabetes = os.path.join(path_storage, diabetes_file.filename)
-            path_praluent = os.path.join(path_storage, praluent_file.filename)
-            path_base = os.path.join(path_storage, base_file.filename)
-            path_producto = os.path.join(path_storage, producto_file.filename)
-            path_cargos = os.path.join(path_storage, cargos_file.filename)
-
-            diabetes_file.save(path_diabetes)
-            praluent_file.save(path_praluent)
-            base_file.save(path_base)
-            producto_file.save(path_producto)
-            cargos_file.save(path_cargos)
-
-            file_path = Path(path_diabetes)
-            file_extension = file_path.suffix.lower()[1:]        
-
-            df_cargos = pd.read_excel(
-                path_cargos,
-                engine='openpyxl'
-            )
-
-            df_diabetes = pd.read_html(
-                path_diabetes
-            )
-
-            df_praluent = pd.read_html(
-                path_praluent
-            )
-            df_base = pd.read_html(
-                path_base
-            )
-            df_producto = pd.read_excel(
-                path_producto,
-                engine='openpyxl'
-            )
-
-            json_diabetes = df_diabetes[0].to_dict(orient='list')
-            json_praluent = df_praluent[0].to_dict(orient='list')
-            json_base = df_base[0].to_dict(orient='list')
-            json_producto = df_producto.to_dict(orient='list')
-            json_cargos = df_cargos.to_dict(orient='list')
+            json_diabetes = file_to_dict(request.files.get("Diabetes"))
+            json_praluent = file_to_dict(request.files.get("Praluent"))
+            json_base = file_to_dict(request.files.get("Base"))
+            json_producto = file_to_dict(request.files.get("Producto"))
+            json_cargos = file_to_dict(request.files.get("Cargos"))
 
             json_base['Número caso producto'] = []
             json_base['Número caso programa'] = []
             json_base['Cargo'] = []
             json_base['Zona'] = []
             for x in range(len(json_base['Relacionado con'])):
-                #print(json_base['Relacionado con'][x])
-                id_base = int(json_base['Relacionado con'][x]) if json_base['Relacionado con'][x].isnumeric() else -1
+                # print(json_base['Relacionado con'][x])
+                id_base = int(
+                    json_base['Relacionado con'][x]) if json_base['Relacionado con'][x].isnumeric() else -1
 
-                numero_producto=json_diabetes['Número de caso principal'][json_diabetes['Número del caso'].index(
+                numero_producto = json_diabetes['Número de caso principal'][json_diabetes['Número del caso'].index(
                     id_base)] if id_base in json_diabetes['Número del caso'] else ""
-                
+
                 numero_programa = json_producto['Programa'][json_producto['Número del caso'].index(round(
                     numero_producto, 1))] if numero_producto in json_producto['Número del caso'] else json_praluent['Programa'][json_praluent['Número del caso'].index(id_base)] if id_base in json_praluent['Número del caso'] else ""
 
-                cargo=json_cargos['Cargo'][json_cargos['Asignado'].index(json_base["Asignado"][x])] if json_base["Asignado"][x] in json_cargos["Asignado"] else ""
-                zona=json_cargos['Zona'][json_cargos['Asignado'].index(json_base["Asignado"][x])] if json_base["Asignado"][x] in json_cargos["Asignado"] else ""
-
+                cargo = json_cargos['Cargo'][json_cargos['Asignado'].index(
+                    json_base["Asignado"][x])] if json_base["Asignado"][x] in json_cargos["Asignado"] else ""
+                zona = json_cargos['Zona'][json_cargos['Asignado'].index(
+                    json_base["Asignado"][x])] if json_base["Asignado"][x] in json_cargos["Asignado"] else ""
 
                 json_base['Número caso programa'].append(numero_programa)
                 json_base['Número caso producto'].append(numero_producto)
                 json_base['Cargo'].append(cargo)
                 json_base['Zona'].append(zona)
+            
+            
+            path_storage = current_app.config['PATH_TEMPORAL']
             df = pd.DataFrame(data=json_base)
             df.to_excel(path_storage+"/tareas.xlsx", index=False)
 
-            response=send_file(path_storage+"/tareas.xlsx", as_attachment=True)
-            #os.remove(input_path)
+            response = send_file(
+                os.path.join(path_storage,"tareas.xlsx"), as_attachment=True)
+            # os.remove(input_path)
             for f in os.listdir(path_storage):
                 os.remove(os.path.join(path_storage, f))
             return response
         except Exception as e:
             return {"mensaje": "Hubo un error no esperado. "+str(e), "error": True}, 500
-        
+
+
+def file_to_dict(file):
+
+    path_storage = current_app.config['PATH_TEMPORAL']
+    path_file = os.path.join(path_storage, file.filename)
+
+    file.save(path_file)
+
+    file_path = Path(path_file)
+    file_extension = file_path.suffix.lower()[1:]
+
+    return excel_converter(path_file)
+
+
+def excel_converter(path_file, type='html'):
+    valid_types = ['html', 'xlsx', 'xls']
+    dict_type = 'list'
+    if type not in valid_types:
+        return 'error'
+
+    try:
+
+        if type == "html":
+            df = pd.read_html(path_file)
+            return df[0].to_dict(orient=dict_type)
+        else:
+            df = pd.read_excel(
+                path_file,
+                engine='openpyxl'
+            )
+            return df.to_dict(orient=dict_type)
+    except:
+        new_try_index = valid_types.index(type)+1
+        if (new_try_index >= len(valid_types)):
+            return "error"
+        else:
+            try_with = valid_types[new_try_index]
+
+            return excel_converter(path_file, try_with)
 
 
 class UserService:

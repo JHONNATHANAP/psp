@@ -8,7 +8,7 @@
       "module": "flask",
       "env": {
         "FLASK_APP": "./src/app.py",
-        "PYTHONPATH": "./",
+        "PYTHONPATH": "/Volumes/DATA/rep/psp-py-b/",
         "FLASK_DEBUG": "0",
         "ENVIRONMENT":"local-withouth-docker"
       },

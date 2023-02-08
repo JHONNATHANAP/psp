@@ -3,7 +3,7 @@ services:
   web:
     build: .
     environment:
-      PYTHONPATH: /app
+      PYTHONPATH: /app/
       FLASK_APP: app.py
       DB_NAME: users
       DB_HOST: users_db

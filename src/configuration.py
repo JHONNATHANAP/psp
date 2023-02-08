@@ -18,6 +18,7 @@ class BaseConfig(object):
     PROPAGATE_EXCEPTIONS = True
     DEBUG_MODE=False
     DEPLOY_MODE=False
+    PATH_TEMPORAL= os.environ.get("PYTHONPATH", default=None)+'Temporal'
 
 
 class GCPConfig(BaseConfig):
