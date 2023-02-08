@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "BACK",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "./src/app.py",
+        "PYTHONPATH": "./",
+        "FLASK_DEBUG": "0",
+        "ENVIRONMENT":"local-withouth-docker"
+      },
+      "args": ["run", "--port=5000", "--no-debugger", "--no-reload"],
+      "jinja": true
+    }
+  ]
+}
