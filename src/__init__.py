@@ -1,6 +1,6 @@
 import os
 from flask import Flask
-from src.views.views import ViewLogIn,ViewUser,ViewSignUp,ViewTareas
+from src.views.views import ViewLogIn,ViewUser,ViewSignUp,ViewTareas,ViewCruzarGenerico
 
 def create_app(config_name):
         _deployed_env_ = os.environ.get("ENVIRONMENT", default=None)
@@ -25,3 +25,4 @@ def buildResources(api):
     api.add_resource(ViewSignUp, '/users')
     api.add_resource(ViewUser, '/users/me')
     api.add_resource(ViewTareas, '/tareas')
+    api.add_resource(ViewCruzarGenerico, '/merge')
