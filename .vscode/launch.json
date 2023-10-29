@@ -8,7 +8,7 @@
       "module": "flask",
       "env": {
         "FLASK_APP": "./src/app.py",
-        "PYTHONPATH": "/Volumes/DATA/rep/psp-py-b/",
+        "DB_URI": "sqlite:///database.db",
         "FLASK_DEBUG": "0",
         "ENVIRONMENT":"local-withouth-docker"
       },

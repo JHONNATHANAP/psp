@@ -1,0 +1,20 @@
+{
+  "tables": [
+    {
+      "name": "Base tareas orig",
+      "columns": []
+    },
+    {
+      "name": "Casos de servicios Diabetes Orig",
+      "columns": ["Asunto"]
+    }  
+  ],
+  "join": [
+    {
+      "primary_key": "Relacionado con",
+      "foreign_key": "Número del caso",
+      "table": "Casos de servicios Diabetes Orig"
+    }
+  
+  ]
+}

@@ -389,3 +389,4 @@ def passwordCheck(password):
 def getTokenData(request):
     token = request.headers.environ['HTTP_AUTHORIZATION'].split("Bearer ")[1]
     return jwt.decode(token, 'frase-secreta', algorithms=['HS256'])
+#postgresql://user:password@localhost/mydatabase
