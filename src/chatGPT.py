@@ -56,7 +56,53 @@ def load_data_and_query():
         
     except Exception as e:
         return { "mensaje": "Hubo un error no esperado. "+str(e), "error": True}
+@app.route('/loaddata', methods=['POST'])
+def load_data_and_query2():
+    try:
+        # Obtener los archivos de Excel y el archivo de configuración del formulario
+        excel_files = request.files.getlist('excel_files')
+        config_file = request.files.get('config_file')
+        # Leer el archivo de configuración
+        config = json.load(config_file)
+        metadata = MetaData()
+    
+        for file in excel_files:
+            try:
+                df = pd.read_excel(file)
+            except Exception as e:
+                try:
+                    df = pd.read_html(file)
+                    df = pd.concat(df)
+                except Exception as e:
+                    continue
+            df = df.applymap(lambda x: str(x).strip() if isinstance(x, str) else x) # Eliminar espacios en blanco alrededor de los strings
+   
+            table_name = file.filename.split(".")[0]
+            columns = []
+            for col in df.columns:
+                col_type = str(df[col].dtype)
+                try:
+                    if col_type.startswith('float'):
+                        df[col] = df[col].fillna(0).astype('int64').astype(str)
+                    elif col_type.startswith('int'):
+                        df[col] = df[col].astype(str)
+                    columns.append(Column(col, String))
+                except ValueError:
+                    df[col] = df[col].astype(str)                   
+                    columns.append(Column(col, String))
+                    
+            table = Table(table_name, metadata, *columns)
 
+
+            metadata.create_all(engine)
+            df.to_sql(table_name, engine, if_exists='replace', index=False)
+        
+        metadata = MetaData()
+        return { "mensaje": "Carga exitosa"+str(e), "error": False}
+        
+    except Exception as e:
+        return { "mensaje": "Hubo un error no esperado. "+str(e), "error": True}
+    
 @app.route('/consulta', methods=['POST'])
 def consulta():
     try:
